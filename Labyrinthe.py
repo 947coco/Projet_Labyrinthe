@@ -79,8 +79,8 @@ Et ducoup il faudra faire des importations : import Labyrinthe from Labyrinthe p
 """
 
 class Joueur():
-    def __init__(self, vitesse, coordonee_x, coordonee_y, direction_vue, largeur, hauteur, chemin_image, 
-                 chemin_image_transparence, nb_flash, nb_leurre, cooldown_transparence):
+    def __init__(self, vitesse, coordonee_x, coordonee_y, direction_vue, 
+                 largeur, hauteur, chemin_image,  nb_flash, nb_leurre, cooldown_transparence):
         self.vitesse = vitesse
         self.image = pygame.image.load(chemin_image).convert()
         self.image_transparence = pygame.image.load(chemin_image).convert_alpha()
@@ -97,7 +97,7 @@ class Joueur():
         
 
     def deplacer(self, touche_pressee, longeur_saut_x, longeur_saut_y):
-        numerateur = 0.2
+        numerateur = 0.17
         fluidite = 50
         if touche_pressee == "z" : 
             self.direction_vue = "N"
@@ -236,7 +236,7 @@ class Jeux():
     def creer_joueur(self, coord_case_x, coord_case_y, direction, vitesse, nb_flash, nb_leurre, cooldown_transparence):
         case = self.labyrinthe.laby[coord_case_x][coord_case_y]
         self.joueur = Joueur(vitesse, case.x1, case.y1, direction, self.long_mur_x*0.6, self.long_mur_y*0.6, 
-                             "./Logo_joueur.png", "./Logo_joueur.png", nb_flash, nb_leurre, cooldown_transparence)
+                             "./Logo_joueur.png", nb_flash, nb_leurre, cooldown_transparence)
         self.verifier_emplacement_case_joueur()
         
     def verifier_emplacement_case_joueur(self):
@@ -248,31 +248,29 @@ class Jeux():
                     self.joueur.case_i,self.joueur.case_j = i, j
 
     def afficher_joueur(self):
-        image =  pygame.transform.scale(self.joueur.image, (self.joueur.largeur, self.joueur.hauteur))  
-        self.fenetre.blit(image, (self.joueur.coordonee_x-self.joueur.largeur*0.4, self.joueur.coordonee_y-self.joueur.hauteur*0.4))
+        image =  pygame.transform.scale(self.joueur.image, (self.joueur.largeur*0.95, self.joueur.hauteur*0.95))  
+        self.fenetre.blit(image, (self.joueur.coordonee_x-self.joueur.largeur*0.45, self.joueur.coordonee_y-self.joueur.hauteur*0.45))
         
-    def murs_adjacents(self):
+    def murs_proches(self):
         murs_proches = []
-        for i in range(-1, 2, 2):
-            for j in range(-1, 2, 2):
+        for i in range(-1, 2):
+            for j in range(-1, 2):
                 try :
                     case = self.labyrinthe.laby[self.joueur.case_i+i][self.joueur.case_j+j]
                     if case.murN : murs_proches.append((case.x1, case.y1), (case.x1, case.y2), (case.x2-case.x1, case.y2-case.y1))
                     if case.murW : murs_proches.append((case.x1, case.y1), (case.x1, case.y2), (case.x2-case.x1, case.y2-case.y1))
                     if case.murS : murs_proches.append((case.x2, case.y1), (case.x2, case.y2), (case.x2-case.x1, case.y2-case.y1))
                     if case.murE : murs_proches.append((case.x1, case.y2), (case.x2, case.y2), (case.x2-case.x1, case.y2-case.y1))
-                except : pass # eviter l'erreur au bord de la map
+                except : pass # eviter l'erreur au bord de la map (pas de case en i = -1 par exemple)
         return murs_proches
         
     
-    def check_collisions(self):
+    def no_collision(self):
         x1, y1, x2, y2 = (self.joueur.coordonee_x, self.joueur.coordonee_y, # en gros ces les coordonnees
                         self.joueur.coordonee_x+self.joueur.largeur, # du joueur en comptant sa hitbox
                         self.joueur.coordonee_y+self.joueur.hauteur)
-        murs = self.murs_adjacents()
-        for debut, fin, milieu in murs:
-            if (x1, y1 == debut[0], debut[1]) or (x1, y1 == fin[0], fin[1]) or (x1, y1 == milieu[0], milieu[1]):
-                return False
+        for x, y in self.murs_proches():
+            if x1<x<x2 and y1<y<y2: return False
         return True
                 
     def verifier_deplacement(self, touche_pressee):
@@ -299,7 +297,7 @@ class Jeux():
             else : self.joueur.case_chevauchee_i, self.joueur.case_chevauchee_j = i+1, j
 
         self.verifier_emplacement_case_joueur()
-        if self.check_collisions():
+        if self.no_collision():
             self.joueur.deplacer(touche_pressee, self.long_mur_x, self.long_mur_y)
         
     def boucle_jeu(self):
